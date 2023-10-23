@@ -1,8 +1,8 @@
 package routers
 
 import (
-	"fmt"
 	"os"
+	"osp-allure/utils"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -10,25 +10,41 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func BindProjectsRouters(router *gin.RouterGroup) {
-	router.GET("/:project_id", getProject)
-	router.GET("/:project_id/reports/*path", getReport)
+func ProjectsRouters(router *gin.RouterGroup) {
+	projectsRouter := router.Group("/projects")
+	projectsRouter.GET("/", getAllProjects)
+	projectsRouter.GET("/:project_id", getProject)
+	projectsRouter.GET("/:project_id/reports/*path", getReport)
+}
+
+func getAllProjects(c *gin.Context) {
+	projectsLink := []string{}
+
+	listDir, _ := os.ReadDir(utils.ProjectsPath())
+
+	if len(listDir) > 0 {
+		for _, dir := range listDir {
+			projectsLink = append(projectsLink, dir.Name())
+		}
+	}
+
+	c.JSON(200, gin.H{
+		"projects": projectsLink,
+	})
 }
 
 func getProject(c *gin.Context) {
+	var err error
 	projectId := c.Param("project_id")
 	redirect, redirectErr := strconv.ParseBool(c.Query("redirect"))
 	if redirectErr != nil {
 		redirect = false
 	}
 
-	currentProjectDir := filepath.Join(projectDir, projectId)
-	latestProjectReportsDir := filepath.Join(currentProjectDir, "reports", "latest")
+	currentProjectDir, err := utils.GetProjectPath(projectId)
 
-	if _, err := os.Stat(latestProjectReportsDir); os.IsNotExist(err) {
-		c.JSON(404, gin.H{
-			"error": fmt.Sprintf("Project %s not found", projectId),
-		})
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -50,15 +66,13 @@ func getProject(c *gin.Context) {
 func getReport(c *gin.Context) {
 	projectId := c.Param("project_id")
 	path := c.Param("path")
-	currentProjectDir := filepath.Join(projectDir, projectId)
-	reportDir := filepath.Join(currentProjectDir, "reports", path)
-	reportPath := filepath.Join(projectDir, projectId, "reports", path)
-	if _, err := os.Stat(reportDir); os.IsNotExist(err) {
-		c.JSON(404, gin.H{
-			"error": fmt.Sprintf("Report not found for projectId %s", projectId),
-		})
+	currentProjectDir, err := utils.GetProjectPath(projectId)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
-	c.File(reportPath)
+	reportDir := filepath.Join(currentProjectDir, "reports", path)
+
+	c.File(reportDir)
 }

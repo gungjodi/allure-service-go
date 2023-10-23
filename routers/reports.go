@@ -3,6 +3,8 @@ package routers
 import (
 	"fmt"
 	"net/http"
+	"osp-allure/utils"
+	"path/filepath"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -10,9 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-var projectDir = ".projects"
-
-func BindReportsRouters(router *gin.RouterGroup) {
+func ReportsRouters(router *gin.RouterGroup) {
 	router.POST("/send-results", sendResults)
 	router.GET("/generate-report", generateReport)
 }
@@ -20,6 +20,8 @@ func BindReportsRouters(router *gin.RouterGroup) {
 func sendResults(c *gin.Context) {
 	projectId := c.Query("project_id")
 	forceProjectCreation := c.Query("force_project_creation")
+	projectDir, _ := utils.GetProjectPath(projectId)
+
 	log.Info().Msgf("Project ID: %s, force %s", projectId, forceProjectCreation)
 	time1 := time.Now()
 
@@ -37,7 +39,7 @@ func sendResults(c *gin.Context) {
 	var size int64 = 0
 	for _, file := range files {
 		size = size + file.Size
-		c.SaveUploadedFile(file, fmt.Sprintf("%s/%s/results/%s", projectDir, projectId, file.Filename))
+		c.SaveUploadedFile(file, filepath.Join(projectDir, "results", file.Filename))
 	}
 	time2 := time.Now()
 	diff := time2.Sub(time1)
@@ -59,8 +61,15 @@ func generateReport(c *gin.Context) {
 }
 
 func generateReportCmd(projectId string) cmd.Status {
-	// Start a long-running process, capture stdout and stderr
-	generateAllureCmd := cmd.NewCmd(".data/allure/bin/allure", "generate", "--clean", "-o", fmt.Sprintf("%s/%s/reports/latest", projectDir, projectId), fmt.Sprintf("%s/%s/results", projectDir, projectId))
+	projectDir, _ := utils.GetProjectPath(projectId)
+	generateAllureCmd := cmd.NewCmd(
+		".data/allure/bin/allure",
+		"generate",
+		"--clean",
+		"-o",
+		utils.GetLatestProjectReport(projectId),
+		fmt.Sprintf("%s/results", projectDir),
+	)
 	statusChan := <-generateAllureCmd.Start()
 	log.Info().Msgf("Generate report for project DONE: %v", statusChan)
 	return statusChan

@@ -31,8 +31,8 @@ func main() {
 		})
 	})
 
-	reports.BindProjectsRouters(router.Group("/projects"))
-	reports.BindReportsRouters(router)
+	reports.ProjectsRouters(router)
+	reports.ReportsRouters(router)
 
 	app.Run("0.0.0.0:5050")
 }
