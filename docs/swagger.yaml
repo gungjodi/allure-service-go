@@ -1,0 +1,139 @@
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Gin Swagger Example API
+  version: "1.0"
+paths:
+  /generate-report:
+    get:
+      description: <API Description>
+      parameters:
+      - description: projectId
+        in: query
+        name: project_id
+        required: true
+        type: string
+      - description: executionName
+        in: query
+        name: execution_name
+        type: string
+      - description: executionName
+        in: query
+        name: execution_from
+        type: string
+      - description: executionName
+        in: query
+        name: execution_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: <summary>
+  /ping:
+    get:
+      consumes:
+      - '*/*'
+      description: get the status of server.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Show the status of server.
+      tags:
+      - root
+  /projects/{project_id}:
+    get:
+      consumes:
+      - '*/*'
+      description: Get Project By ID
+      parameters:
+      - default: default
+        description: default
+        in: path
+        name: project_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Get Project By ID
+      tags:
+      - Projects
+  /projects/{project_id}/reports/{path}:
+    get:
+      consumes:
+      - '*/*'
+      description: Get Project By ID
+      parameters:
+      - default: default
+        description: default
+        in: path
+        name: project_id
+        required: true
+        type: string
+      - default: latest/widgets/summary.json
+        description: default
+        in: path
+        name: path
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Get Project By ID
+      tags:
+      - Projects
+  /send-results:
+    post:
+      description: Send allure result files to server
+      parameters:
+      - description: projectId
+        in: query
+        name: project_id
+        required: true
+        type: string
+      - description: create project if not exists
+        in: query
+        name: force_project_creation
+        type: boolean
+      - collectionFormat: csv
+        description: result files
+        in: formData
+        items:
+          type: file
+        name: files
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Send results
+swagger: "2.0"
