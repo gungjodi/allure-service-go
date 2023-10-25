@@ -1,0 +1,10 @@
+services:
+  allure:
+    build: .
+    container_name: allure
+    ports:
+      - "5050:5050"
+    volumes:
+      - ${PWD}/.AppData:/AppData
+    environment:
+      FLASK_DEBUG: "true"
