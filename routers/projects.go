@@ -1,6 +1,7 @@
 package routers
 
 import (
+	"net/url"
 	"os"
 	"osp-allure/utils"
 	"path"
@@ -17,6 +18,14 @@ func ProjectsRouters(router *gin.RouterGroup) {
 	projectsRouter.GET("/:project_id/reports/*path", getReport)
 }
 
+// Get All projects godoc
+// @Summary Get All projects
+// @Description Get All projects
+// @Tags Projects
+// @Accept */*
+// @Produce json
+// @Success 200
+// @Router /projects [get]
 func getAllProjects(c *gin.Context) {
 	projectsLink := []string{}
 
@@ -33,6 +42,15 @@ func getAllProjects(c *gin.Context) {
 	})
 }
 
+// Get Project By ID godoc
+// @Summary Get Project By ID
+// @Description Get Project By ID
+// @Tags Projects
+// @Accept */*
+// @Produce json
+// @Success 200
+// @Param   project_id     path     string     true  "default"     default(default)
+// @Router /projects/{project_id} [get]
 func getProject(c *gin.Context) {
 	var err error
 	projectId := c.Param("project_id")
@@ -41,7 +59,7 @@ func getProject(c *gin.Context) {
 		redirect = false
 	}
 
-	currentProjectDir, err := utils.GetProjectPath(projectId)
+	currentProjectDir := utils.GetProjectPath(projectId)
 
 	if err != nil {
 		c.Error(err)
@@ -63,15 +81,20 @@ func getProject(c *gin.Context) {
 	})
 }
 
+// Get Project By ID godoc
+// @Summary Get Project By ID
+// @Description Get Project By ID
+// @Tags Projects
+// @Accept */*
+// @Produce json
+// @Success 200
+// @Param   project_id     path     string     true  "default"     default(default)
+// @Param   path     path     string     true  "default"     default(latest/widgets/summary.json)
+// @Router /projects/{project_id}/reports/{path} [get]
 func getReport(c *gin.Context) {
 	projectId := c.Param("project_id")
-	path := c.Param("path")
-	currentProjectDir, err := utils.GetProjectPath(projectId)
-	if err != nil {
-		c.Error(err)
-		return
-	}
-
+	path, _ := url.QueryUnescape(c.Param("path"))
+	currentProjectDir := utils.GetProjectPath(projectId)
 	reportDir := filepath.Join(currentProjectDir, "reports", path)
 
 	c.File(reportDir)
