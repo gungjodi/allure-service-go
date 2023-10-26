@@ -14,11 +14,13 @@ import (
 
 func ReportsRouters(router *gin.RouterGroup) {
 	router.POST("/send-results", sendResults)
-	router.POST("/generate-report", generateReport)
+	router.GET("/generate-report", generateReport)
 }
 
 // @Summary Send results
 // @Description Send allure result files to server
+// @Tags Reports
+// @Accept mpfd
 // @Produce json
 // @Success 200
 // @Failure 400
@@ -47,7 +49,7 @@ func sendResults(c *gin.Context) {
 		return
 	}
 
-	files := form.File["files"]
+	files := form.File["files[]"]
 	var size int64 = 0
 	for _, file := range files {
 		size = size + file.Size
@@ -63,8 +65,9 @@ func sendResults(c *gin.Context) {
 	})
 }
 
-// @Summary <summary>
-// @Description <API Description>
+// @Summary Generate report from sent results
+// @Description
+// @Tags Reports
 // @Produce json
 // @Success 200
 // @Failure 400
@@ -90,14 +93,15 @@ func generateReport(c *gin.Context) {
 
 	utils.KeepResultHistory(projectId)
 	latestBuildOrder := utils.GetLatestProjectBuildOrder(projectId)
-	utils.StoreAllureReport(projectId, latestBuildOrder)
 
 	newBuildOrder := latestBuildOrder + 1
 	utils.GenerateExecutorJson(projectId, newBuildOrder, executionName, executionFrom, executionType)
 
-	utils.GenerateReportCmd(projectId)
+	utils.GenerateReportCmd(projectId, newBuildOrder)
+	utils.CreateReportLatestSymlink(projectId, newBuildOrder)
+	reportUrl := fmt.Sprintf("http://%s%s/projects/%s/reports/%d/index.html", c.Request.Host, os.Getenv("BASE_PATH"), projectId, newBuildOrder)
 
-	reportUrl := fmt.Sprintf("http://%s%s/projects/%s/reports/latest/index.html", c.Request.Host, os.Getenv("BASE_PATH"), projectId)
+	go utils.KeepReportHistory(projectId)
 
 	c.JSON(http.StatusOK, gin.H{
 		"data": gin.H{

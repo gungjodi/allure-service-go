@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"osp-allure/routers"
+	"syscall"
 	"time"
 
 	_ "osp-allure/docs"
@@ -19,35 +20,33 @@ func init() {
 		log.Error().AnErr("Error loading .env file", err)
 	}
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).With().Timestamp().Logger()
+	syscall.Umask(0)
 }
 
-// @title Gin Swagger Example API
-// @version 1.0
-// @description This is a sample server server.
-// @termsOfService http://swagger.io/terms/
-
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
-
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 func main() {
 	gin.SetMode(os.Getenv("GIN_MODE"))
 	app := gin.Default()
+	app.RedirectTrailingSlash = false
+	app.UseRawPath = true
+	app.UnescapePathValues = false
+	app.RedirectFixedPath = false
+	app.RemoveExtraSlash = true
 	app.MaxMultipartMemory = 512 << 20
 
-	base := app.Group("/")
-	{
-		BindAllRouters(base)
+	base := app.Group(os.Getenv("BASE_PATH"))
+	BindAllRouters(base)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "5050"
 	}
 
-	sub := app.Group(os.Getenv("BASE_PATH"))
-	{
-		BindAllRouters(sub)
+	host := os.Getenv("HOST")
+	if host == "" {
+		host = "0.0.0.0"
 	}
 
-	app.Run("0.0.0.0:5050")
+	log.Fatal().Err(app.Run(host + ":" + port))
 }
 
 func BindAllRouters(group *gin.RouterGroup) {

@@ -9,28 +9,41 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "termsOfService": "http://swagger.io/terms/",
-        "contact": {
-            "name": "API Support",
-            "url": "http://www.swagger.io/support",
-            "email": "support@swagger.io"
-        },
-        "license": {
-            "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
-        },
+        "contact": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/generate-report": {
+        "/config": {
             "get": {
-                "description": "\u003cAPI Description\u003e",
+                "description": "Get app config",
+                "consumes": [
+                    "*/*"
+                ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "\u003csummary\u003e",
+                "tags": [
+                    "General"
+                ],
+                "summary": "Get App Config",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/generate-report": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Generate report from sent results",
                 "parameters": [
                     {
                         "type": "string",
@@ -74,9 +87,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/ping": {
+        "/projects": {
             "get": {
-                "description": "get the status of server.",
+                "description": "Get All projects",
                 "consumes": [
                     "*/*"
                 ],
@@ -84,9 +97,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "root"
+                    "Projects"
                 ],
-                "summary": "Show the status of server.",
+                "summary": "Get All projects",
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -122,11 +135,9 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 }
-            }
-        },
-        "/projects/{project_id}/reports/{path}": {
-            "get": {
-                "description": "Get Project By ID",
+            },
+            "post": {
+                "description": "Create Project",
                 "consumes": [
                     "*/*"
                 ],
@@ -136,7 +147,62 @@ const docTemplate = `{
                 "tags": [
                     "Projects"
                 ],
-                "summary": "Get Project By ID",
+                "summary": "Create Project",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "default",
+                        "description": "default",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete Project",
+                "consumes": [
+                    "*/*"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Delete Project",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "default",
+                        "description": "default",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/projects/{project_id}/reports/{path}": {
+            "get": {
+                "description": "Get Path in a project directory",
+                "consumes": [
+                    "*/*"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Get Path in a project directory",
                 "parameters": [
                     {
                         "type": "string",
@@ -165,8 +231,14 @@ const docTemplate = `{
         "/send-results": {
             "post": {
                 "description": "Send allure result files to server",
+                "consumes": [
+                    "multipart/form-data"
+                ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "Reports"
                 ],
                 "summary": "Send results",
                 "parameters": [
@@ -216,12 +288,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "",
 	Host:             "",
 	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "Gin Swagger Example API",
-	Description:      "This is a sample server server.",
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

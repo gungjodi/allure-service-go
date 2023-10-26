@@ -1,10 +1,14 @@
+version: '3.8'
+
 services:
-  allure:
-    build: .
-    container_name: allure
+  allure-service-go:
+    container_name: allure-service-go
+    image: registry-intl.ap-southeast-5.aliyuncs.com/dana/allure-service-go:latest
+    #pull_policy: always
+    restart: always
     ports:
       - "5050:5050"
     volumes:
-      - ${PWD}/.AppData:/AppData
-    environment:
-      FLASK_DEBUG: "true"
+      - ${PWD}/.AppData/projects:/allure/AppData/projects
+    env_file:
+      - .env

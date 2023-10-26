@@ -1,19 +1,21 @@
 info:
-  contact:
-    email: support@swagger.io
-    name: API Support
-    url: http://www.swagger.io/support
-  description: This is a sample server server.
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
-  title: Gin Swagger Example API
-  version: "1.0"
+  contact: {}
 paths:
+  /config:
+    get:
+      consumes:
+      - '*/*'
+      description: Get app config
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Get App Config
+      tags:
+      - General
   /generate-report:
     get:
-      description: <API Description>
       parameters:
       - description: projectId
         in: query
@@ -43,21 +45,42 @@ paths:
           description: Not Found
         "500":
           description: Internal Server Error
-      summary: <summary>
-  /ping:
+      summary: Generate report from sent results
+      tags:
+      - Reports
+  /projects:
     get:
       consumes:
       - '*/*'
-      description: get the status of server.
+      description: Get All projects
       produces:
       - application/json
       responses:
         "200":
           description: OK
-      summary: Show the status of server.
+      summary: Get All projects
       tags:
-      - root
+      - Projects
   /projects/{project_id}:
+    delete:
+      consumes:
+      - '*/*'
+      description: Delete Project
+      parameters:
+      - default: default
+        description: default
+        in: path
+        name: project_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Delete Project
+      tags:
+      - Projects
     get:
       consumes:
       - '*/*'
@@ -77,11 +100,30 @@ paths:
       summary: Get Project By ID
       tags:
       - Projects
+    post:
+      consumes:
+      - '*/*'
+      description: Create Project
+      parameters:
+      - default: default
+        description: default
+        in: path
+        name: project_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Create Project
+      tags:
+      - Projects
   /projects/{project_id}/reports/{path}:
     get:
       consumes:
       - '*/*'
-      description: Get Project By ID
+      description: Get Path in a project directory
       parameters:
       - default: default
         description: default
@@ -95,16 +137,16 @@ paths:
         name: path
         required: true
         type: string
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
-      summary: Get Project By ID
+      summary: Get Path in a project directory
       tags:
       - Projects
   /send-results:
     post:
+      consumes:
+      - multipart/form-data
       description: Send allure result files to server
       parameters:
       - description: projectId
@@ -136,4 +178,6 @@ paths:
         "500":
           description: Internal Server Error
       summary: Send results
+      tags:
+      - Reports
 swagger: "2.0"

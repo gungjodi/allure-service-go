@@ -7,7 +7,6 @@ import (
 	"osp-allure/models"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	"github.com/go-cmd/cmd"
 	"github.com/otiai10/copy"
@@ -52,20 +51,19 @@ func GetLatestProjectBuildOrder(projectId string) int {
 	executorJSON := []models.ExecutorInfo{}
 	if err := json.Unmarshal(content, &executorJSON); err != nil {
 		log.Logger.Error().Msgf("Error unmarshal executor file for projectId %s: %s", projectId, err)
+		return 0
+	}
+
+	if len(executorJSON) == 0 {
+		log.Logger.Info().Msgf("No executor file for projectId %s, latest buildOrder is 0", projectId)
+		return 0
 	}
 	return executorJSON[0].BuildOrder
 }
 
-func StoreAllureReport(projectId string, buildOrder int) {
+func KeepReportHistory(projectId string) {
 	keepHistoryLatest, _ := strconv.Atoi(os.Getenv("KEEP_HISTORY_LATEST"))
 	projectReportPath := filepath.Join(GetProjectPath(projectId), "reports")
-
-	if buildOrder > 0 {
-		if err := os.Rename(filepath.Join(projectReportPath, "latest"), filepath.Join(projectReportPath, strconv.Itoa(buildOrder))); err != nil {
-			log.Logger.Error().Msgf("Error keeping latest report of projectId %s: %s", projectId, err)
-		}
-		log.Info().Msgf("latest report of projectId %s kept on build order %d", projectId, buildOrder)
-	}
 
 	reportDirsName := GetSortedReportsDir(projectId)
 	log.Info().Msgf("Keeping latest history, max = %d", keepHistoryLatest)
@@ -78,7 +76,7 @@ func StoreAllureReport(projectId string, buildOrder int) {
 	}
 }
 
-func GenerateExecutorJson(projectId string, buildOrder int, executionName string, executionFrom string, executionType string) {
+func GenerateExecutorJson(projectId string, buildOrder int, executionName string, executionFrom string, executionType string) error {
 	if executionName == "" {
 		executionName = "Execution On Demand"
 	}
@@ -90,65 +88,68 @@ func GenerateExecutorJson(projectId string, buildOrder int, executionName string
 		ReportName: projectId,
 		BuildOrder: buildOrder,
 		Name:       executionName,
-		ReportURL:  fmt.Sprintf("../%s/reports/%d", projectId, buildOrder),
+		ReportURL:  fmt.Sprintf("../%d", buildOrder),
 		BuildURL:   executionFrom,
 		Type:       executionType,
 	}
-	file, _ := json.MarshalIndent(executorMap, "", " ")
-	if err := os.Remove(filepath.Join(GetProjectPath(projectId), "results", "executor.json")); err != nil {
-		log.Logger.Err(err)
+
+	file, err := json.MarshalIndent(executorMap, "", " ")
+	if err != nil {
+		log.Error().Err(err)
+		return err
 	}
-	if err := os.WriteFile(filepath.Join(GetProjectPath(projectId), "results", "executor.json"), file, 0644); err != nil {
-		log.Logger.Err(err)
+
+	log.Info().Msgf("Generating executor.json for projectId %s on build order %d", projectId, buildOrder)
+
+	if err := os.WriteFile(filepath.Join(GetProjectPath(projectId), "results", "executor.json"), file, os.ModePerm); err != nil {
+		log.Error().Err(err)
+		return err
 	}
+	return nil
 }
 
-func GenerateReportCmd(projectId string) cmd.Status {
-	log.Info().Msgf("Generating report for project %s", projectId)
+func GenerateReportCmd(projectId string, newBuildOrder int) cmd.Status {
 	resultPath := filepath.Join(GetProjectPath(projectId), "results")
-	generateAllureCmd := cmd.NewCmd(
-		"allure",
-		"generate",
-		"--clean",
-		resultPath,
-		"-o",
-		GetLatestProjectReport(projectId),
+	allureCmd := "allure"
+	localAllure := os.Getenv("LOCAL_ALLURE_HOME")
+	if localAllure != "" {
+		allureCmd = localAllure
+	}
+
+	log.Info().Msgf("Generating report for project %s", projectId)
+	log.Debug().Msgf("%v %v %v %v %v %v",
+		allureCmd, "generate", "--clean", resultPath,
+		"-o", filepath.Join(GetProjectPath(projectId), "reports", strconv.Itoa(newBuildOrder)),
+	)
+
+	generateAllureCmd := cmd.NewCmdOptions(
+		cmd.Options{Streaming: true},
+		allureCmd, "generate", "--clean", resultPath,
+		"-o", filepath.Join(GetProjectPath(projectId), "reports", strconv.Itoa(newBuildOrder)),
 	)
 	statusChan := generateAllureCmd.Start()
 
-	go func() {
-		<-time.After(1 * time.Hour)
-		generateAllureCmd.Stop()
-	}()
-
-	select {
-	case finalStatus := <-statusChan:
-		// done
-		if finalStatus.Complete {
-			log.Info().Msgf("%v", finalStatus.Stdout)
-		}
-	default:
-		// no, still running
-		log.Info().Msgf("%v", statusChan)
+	if <-generateAllureCmd.Stderr != "" {
+		log.Err(fmt.Errorf(<-generateAllureCmd.Stderr))
 	}
-	finalStatus := <-statusChan
-	log.Info().Msgf("%v", finalStatus.Stdout)
-	return finalStatus
+	log.Info().Msgf("%v", <-generateAllureCmd.Stdout)
+
+	return <-statusChan
 }
 
 func KeepResultHistory(projectId string) {
 	keepResultHistory, _ := strconv.ParseBool(os.Getenv("KEEP_RESULTS_HISTORY"))
 	projectResultsHistory := filepath.Join(GetProjectPath(projectId), "results", "history")
-	projectLatestReport := filepath.Join(GetProjectPath(projectId), "reports", "latest", "history")
+	projectLatestReportHistory := filepath.Join(GetLatestProjectReport(projectId), "history")
 
 	if keepResultHistory {
 		log.Info().Msgf("Creating history on results directory for PROJECT_ID: %s ...", projectId)
 		if err := os.MkdirAll(projectResultsHistory, os.ModePerm); err != nil {
 			log.Error().Msgf("Error creating history directory on results for PROJECT_ID: %s", projectId)
 		}
-		if CheckFileOrDirExist(projectLatestReport) {
+		if CheckFileOrDirExist(projectLatestReportHistory) {
 			log.Info().Msgf("Copying history from previous results on projectId %s ...", projectId)
-			if err := copy.Copy(projectLatestReport, projectResultsHistory, copy.Options{
+			if err := copy.Copy(projectLatestReportHistory, projectResultsHistory, copy.Options{
 				PreserveTimes: true,
 				PreserveOwner: true,
 			}); err != nil {
