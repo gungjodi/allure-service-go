@@ -2,23 +2,24 @@ package routers
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"runtime"
 
 	docs "osp-allure/docs"
 	"osp-allure/utils"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/swagger"
 	"github.com/rs/zerolog/log"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func GeneralRouters(router *gin.RouterGroup) {
+func GeneralRouters(router fiber.Router) {
 	docs.SwaggerInfo.BasePath = os.Getenv("BASE_PATH")
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	router.GET("/config", config)
+	router.Get("/", func(c *fiber.Ctx) error {
+		return c.Redirect("swagger/index.html")
+	})
+	router.Get("/swagger/*", swagger.HandlerDefault)
+	router.Get("/config", config)
 }
 
 // Get Config godoc
@@ -29,19 +30,24 @@ func GeneralRouters(router *gin.RouterGroup) {
 // @Produce json
 // @Success 200
 // @Router /config [get]
-func config(c *gin.Context) {
-	dat, err := os.ReadFile(os.Getenv("ALLURE_VERSION"))
+func config(c *fiber.Ctx) error {
+	allureVersion, err := os.ReadFile(os.Getenv("ALLURE_VERSION"))
 
 	if err != nil {
 		log.Err(err)
 	}
 
-	c.JSON(http.StatusOK, map[string]any{
-		"GO_VERSION":           runtime.Version(),
-		"BASE_PATH":            fmt.Sprintf("http://%v%s", c.Request.Host, os.Getenv("BASE_PATH")),
-		"PROJECTS_PATH":        utils.ProjectsPath(),
-		"ALLURE_VERSION":       string(dat),
-		"KEEP_RESULTS_HISTORY": os.Getenv("KEEP_RESULTS_HISTORY"),
-		"KEEP_HISTORY_LATEST":  os.Getenv("KEEP_HISTORY_LATEST"),
+	return c.JSON(map[string]any{
+		"APP_MODE":                             utils.GetEnv("APP_MODE", "release"),
+		"GO_VERSION":                           runtime.Version(),
+		"APP_VERSION":                          utils.GetEnv("APP_VERSION", ""),
+		"BASE_PATH":                            fmt.Sprintf("%s%s", c.BaseURL(), os.Getenv("BASE_PATH")),
+		"PROJECTS_PATH":                        utils.ProjectsPath(),
+		"PROJECTS_BACKUP_PATH":                 utils.BackupProjectsPath(),
+		"ALLURE_VERSION":                       string(allureVersion),
+		"KEEP_RESULTS_HISTORY":                 os.Getenv("KEEP_RESULTS_HISTORY"),
+		"KEEP_HISTORY_LATEST":                  os.Getenv("KEEP_HISTORY_LATEST"),
+		"DOWNLOAD_REPORT_CSV_DESTINATION_PATH": utils.GetBackupReportCSVPath(),
+		"GOROUTINE_COUNT":                      runtime.NumGoroutine(),
 	})
 }
