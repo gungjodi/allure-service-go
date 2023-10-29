@@ -2,54 +2,77 @@ package main
 
 import (
 	"os"
-	"osp-allure/routers"
+	"regexp"
+	"strings"
 	"syscall"
+
+	"osp-allure/routers"
+	"osp-allure/utils"
 	"time"
 
 	_ "osp-allure/docs"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
+	fiberUtils "github.com/gofiber/fiber/v2/utils"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
+
+var appMode string
 
 func init() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Error().AnErr("Error loading .env file", err)
 	}
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).With().Timestamp().Logger()
+
+	appMode = utils.GetEnv("APP_MODE", "release")
+
+	logLevel := zerolog.InfoLevel
+	if strings.ToLower(appMode) == "debug" {
+		logLevel = zerolog.DebugLevel
+	}
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).With().Timestamp().Logger().Level(logLevel)
+	log.Debug().Msgf("App mode: %s", appMode)
 	syscall.Umask(0)
 }
 
 func main() {
-	gin.SetMode(os.Getenv("GIN_MODE"))
-	app := gin.Default()
-	app.RedirectTrailingSlash = false
-	app.UseRawPath = true
-	app.UnescapePathValues = false
-	app.RedirectFixedPath = false
-	app.RemoveExtraSlash = true
-	app.MaxMultipartMemory = 512 << 20
+	app := fiber.New(fiber.Config{
+		BodyLimit:                    512 << 20,
+		StreamRequestBody:            true,
+		DisablePreParseMultipartForm: true,
+		UnescapePath:                 true,
+	})
+	app.Use(func(c *fiber.Ctx) error {
+		originalUrl := fiberUtils.CopyString(c.OriginalURL())
 
-	base := app.Group(os.Getenv("BASE_PATH"))
-	BindAllRouters(base)
+		// Check if the client is requesting a file extension
+		extMatch, _ := regexp.MatchString("\\.[a-zA-Z0-9]+$", originalUrl)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "5050"
+		if !strings.HasSuffix(originalUrl, "/") && !extMatch && c.Method() == "GET" {
+			c.Redirect(originalUrl + "/")
+		}
+		return c.Next()
+	})
+
+	app.Use(logger.New())
+	app.Use(recover.New())
+
+	basePath := utils.GetEnv("BASE_PATH", "/")
+	app.Route(basePath, func(router fiber.Router) {
+		bindAllRouters(router)
+	})
+
+	if err := app.Listen(utils.GetEnv("HOST", "0.0.0.0") + ":" + utils.GetEnv("PORT", "5050")); err != nil {
+		log.Fatal().Msgf("%v", err)
 	}
-
-	host := os.Getenv("HOST")
-	if host == "" {
-		host = "0.0.0.0"
-	}
-
-	log.Fatal().Err(app.Run(host + ":" + port))
 }
 
-func BindAllRouters(group *gin.RouterGroup) {
+func bindAllRouters(group fiber.Router) {
 	routers.GeneralRouters(group)
 	routers.ProjectsRouters(group)
 	routers.ReportsRouters(group)
