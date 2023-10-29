@@ -1,6 +1,112 @@
+definitions:
+  models.BatchDeleteRequest:
+    properties:
+      async:
+        type: boolean
+      projects:
+        example:
+        - test123
+        - test456
+        - test789
+        items:
+          type: string
+        type: array
+    type: object
+  models.CreateProjectRequest:
+    properties:
+      id:
+        example: default
+        type: string
+    type: object
 info:
   contact: {}
 paths:
+  /backup/{project_id}/{report_id}:
+    get:
+      consumes:
+      - '*/*'
+      description: Backup Report By ID
+      parameters:
+      - default: default
+        description: default
+        in: path
+        name: project_id
+        required: true
+        type: string
+      - default: latest
+        description: default
+        in: path
+        name: report_id
+        required: true
+        type: string
+      - default: true
+        description: default
+        in: query
+        name: should_delete
+        type: boolean
+      - default: true
+        description: default
+        in: query
+        name: async
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Backup Report By ID
+      tags:
+      - Reports
+  /clean-history:
+    get:
+      consumes:
+      - multipart/form-data
+      description: Clean history project
+      parameters:
+      - description: projectId
+        in: query
+        name: project_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Clean history
+      tags:
+      - Reports
+  /clean-results:
+    get:
+      consumes:
+      - multipart/form-data
+      description: Clean allure result files on server
+      parameters:
+      - description: projectId
+        in: query
+        name: project_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Clean results
+      tags:
+      - Reports
   /config:
     get:
       consumes:
@@ -34,6 +140,11 @@ paths:
         in: query
         name: execution_type
         type: string
+      - default: false
+        description: executionName
+        in: query
+        name: backup_latest
+        type: boolean
       produces:
       - application/json
       responses:
@@ -61,6 +172,25 @@ paths:
       summary: Get All projects
       tags:
       - Projects
+    post:
+      consumes:
+      - application/json
+      description: Create Project
+      parameters:
+      - description: default
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateProjectRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Create Project
+      tags:
+      - Projects
   /projects/{project_id}:
     delete:
       consumes:
@@ -83,7 +213,7 @@ paths:
       - Projects
     get:
       consumes:
-      - '*/*'
+      - application/json
       description: Get Project By ID
       parameters:
       - default: default
@@ -98,25 +228,6 @@ paths:
         "200":
           description: OK
       summary: Get Project By ID
-      tags:
-      - Projects
-    post:
-      consumes:
-      - '*/*'
-      description: Create Project
-      parameters:
-      - default: default
-        description: default
-        in: path
-        name: project_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      summary: Create Project
       tags:
       - Projects
   /projects/{project_id}/reports/{path}:
@@ -143,6 +254,46 @@ paths:
       summary: Get Path in a project directory
       tags:
       - Projects
+  /projects/batch-delete:
+    post:
+      consumes:
+      - application/json
+      description: Batch Delete Project
+      parameters:
+      - description: default
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.BatchDeleteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Batch Delete Project
+      tags:
+      - Projects
+  /report/download:
+    get:
+      consumes:
+      - '*/*'
+      description: Download latest report csv
+      parameters:
+      - default: default
+        description: default
+        in: query
+        name: project_id
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+      summary: Download latest report csv
+      tags:
+      - Reports
   /send-results:
     post:
       consumes:
@@ -163,7 +314,7 @@ paths:
         in: formData
         items:
           type: file
-        name: files
+        name: files[]
         required: true
         type: array
       produces:

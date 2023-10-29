@@ -15,6 +15,134 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/backup/{project_id}/{report_id}": {
+            "get": {
+                "description": "Backup Report By ID",
+                "consumes": [
+                    "*/*"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Backup Report By ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "default",
+                        "description": "default",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "latest",
+                        "description": "default",
+                        "name": "report_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "default",
+                        "name": "should_delete",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "default",
+                        "name": "async",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/clean-history": {
+            "get": {
+                "description": "Clean history project",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Clean history",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "projectId",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/clean-results": {
+            "get": {
+                "description": "Clean allure result files on server",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Clean results",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "projectId",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
         "/config": {
             "get": {
                 "description": "Get app config",
@@ -69,6 +197,13 @@ const docTemplate = `{
                         "description": "executionName",
                         "name": "execution_type",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "executionName",
+                        "name": "backup_latest",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -105,41 +240,11 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 }
-            }
-        },
-        "/projects/{project_id}": {
-            "get": {
-                "description": "Get Project By ID",
-                "consumes": [
-                    "*/*"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Projects"
-                ],
-                "summary": "Get Project By ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "default": "default",
-                        "description": "default",
-                        "name": "project_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
             },
             "post": {
                 "description": "Create Project",
                 "consumes": [
-                    "*/*"
+                    "application/json"
                 ],
                 "produces": [
                     "application/json"
@@ -148,6 +253,68 @@ const docTemplate = `{
                     "Projects"
                 ],
                 "summary": "Create Project",
+                "parameters": [
+                    {
+                        "description": "default",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateProjectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/projects/batch-delete": {
+            "post": {
+                "description": "Batch Delete Project",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Batch Delete Project",
+                "parameters": [
+                    {
+                        "description": "default",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.BatchDeleteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/projects/{project_id}": {
+            "get": {
+                "description": "Get Project By ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Get Project By ID",
                 "parameters": [
                     {
                         "type": "string",
@@ -228,6 +395,36 @@ const docTemplate = `{
                 }
             }
         },
+        "/report/download": {
+            "get": {
+                "description": "Download latest report csv",
+                "consumes": [
+                    "*/*"
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Download latest report csv",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "default",
+                        "description": "default",
+                        "name": "project_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/send-results": {
             "post": {
                 "description": "Send allure result files to server",
@@ -262,7 +459,7 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "result files",
-                        "name": "files",
+                        "name": "files[]",
                         "in": "formData",
                         "required": true
                     }
@@ -280,6 +477,36 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error"
                     }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "models.BatchDeleteRequest": {
+            "type": "object",
+            "properties": {
+                "async": {
+                    "type": "boolean"
+                },
+                "projects": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "test123",
+                        "test456",
+                        "test789"
+                    ]
+                }
+            }
+        },
+        "models.CreateProjectRequest": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "example": "default"
                 }
             }
         }
