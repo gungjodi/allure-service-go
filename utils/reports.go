@@ -90,7 +90,7 @@ func GenerateExecutorJson(projectId string, buildOrder int, executionName string
 		ReportName: projectId,
 		BuildOrder: buildOrder,
 		Name:       executionName,
-		ReportURL:  fmt.Sprintf("../%d/index.html", buildOrder),
+		ReportURL:  fmt.Sprintf("../%d/", buildOrder),
 		BuildURL:   executionFrom,
 		Type:       executionType,
 	}

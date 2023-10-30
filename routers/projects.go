@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	app_middlewares "osp-allure/middlewares"
 	"osp-allure/models"
 	"osp-allure/models/response"
 	"osp-allure/utils"
@@ -19,7 +20,7 @@ func ProjectsRouters(router fiber.Router) {
 	projectsRouter.Post("/", createProject)
 	projectsRouter.Post("/batch-delete", batchDeleteProject)
 	projectsRouter.Get("/:project_id", getProject)
-	projectsRouter.Get("/:project_id/reports/*", getReport).Name("project_reports_endpoint")
+	projectsRouter.Use(app_middlewares.AddIndex()).Get("/:project_id/reports/*", getReport).Name("project_reports_endpoint")
 	projectsRouter.Delete("/:project_id", deleteProject)
 }
 
@@ -62,22 +63,33 @@ func getProject(c *fiber.Ctx) error {
 	if isExists := utils.GetExistentsProjects(projectId); !isExists {
 		return response.ResponseNotFound(c, "Project not found")
 	}
+	var reportsLink []string
+	var backupReportsLink []string
+	var size int64 = 0
+	var backupSize int64 = 0
 
 	currentProjectReportsDir := utils.GetProjectReportsPath(projectId)
-
-	var reportsLink []string
-	var size int64 = 0
+	currentProjectBackupReportsDir := utils.GetProjectReportsBackupPath(projectId)
+	utils.DirSize(currentProjectReportsDir, &size)
+	utils.DirSize(currentProjectBackupReportsDir, &backupSize)
 
 	listDir, _ := os.ReadDir(currentProjectReportsDir)
 	for _, dir := range listDir {
-		info, _ := dir.Info()
-		size = size + info.Size()
 		reportsLink = append(reportsLink, filepath.Join(c.BaseURL(), utils.GetFullReportUrl(c, projectId, dir.Name())))
 	}
 
+	listBackupDir, _ := os.ReadDir(currentProjectBackupReportsDir)
+	for _, dir := range listBackupDir {
+		backupReportsLink = append(backupReportsLink, filepath.Join(c.BaseURL(), utils.GetFullReportUrl(c, projectId, dir.Name())))
+	}
+
 	return response.ResponseSuccess(c, fiber.Map{
-		"reports":   reportsLink,
-		"totalSize": fmt.Sprintf("%v%s", (size / 1024 / 1024), "MB"),
+		"backup": fiber.Map{
+			"backupReports": backupReportsLink,
+			"backupSize":    fmt.Sprintf("%v%s", (backupSize / 1024 / 1024), "MB"),
+		},
+		"reports": reportsLink,
+		"size":    fmt.Sprintf("%v%s", (size / 1024 / 1024), "MB"),
 	})
 }
 

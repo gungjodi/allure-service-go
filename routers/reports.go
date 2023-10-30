@@ -45,6 +45,12 @@ func sendResults(c *fiber.Ctx) error {
 	projectResultsDir := utils.GetProjectResultsPath(projectId)
 	projectExist := utils.GetExistentsProjects(projectId)
 
+	if !strings.Contains(string(c.Request().Header.ContentType()), fiber.MIMEMultipartForm) {
+		return response.ResponseBadRequest(c, fiber.Map{
+			"message": "Content-Type must be " + fiber.MIMEMultipartForm,
+		})
+	}
+
 	if !projectExist {
 		utils.CreateProject(projectId)
 	}

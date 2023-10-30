@@ -172,3 +172,18 @@ func CreateReportLatestSymlink(projectId string, latestBuildOrder int) error {
 	<-cmd.NewCmd("ln", "-sf", latestProjectPath, latestReportSymlink).Start()
 	return nil
 }
+
+func DirSize(path string, size *int64) error {
+	var s int64
+	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			s += info.Size()
+		}
+		return err
+	})
+	*size = s
+	return err
+}
