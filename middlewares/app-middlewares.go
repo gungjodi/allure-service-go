@@ -26,6 +26,10 @@ func AddTrailingSlashes() func(c *fiber.Ctx) error {
 }
 
 func FavIcon() fiber.Handler {
+	if !utils.CheckFileOrDirExist(filepath.Join(utils.GetAllureResourcesPath(), "favicon.ico")) {
+		return favicon.New()
+	}
+
 	return favicon.New(favicon.Config{
 		File: filepath.Join(utils.GetAllureResourcesPath(), "favicon.ico"),
 		URL:  "/favicon.ico",
