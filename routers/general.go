@@ -31,10 +31,11 @@ func GeneralRouters(router fiber.Router) {
 // @Success 200
 // @Router /config [get]
 func config(c *fiber.Ctx) error {
-	allureVersion, err := os.ReadFile(os.Getenv("ALLURE_VERSION"))
+	allureVersion, error := utils.GetAllureVersion()
 
-	if err != nil {
-		log.Err(err)
+	if error != nil {
+		log.Err(error)
+		allureVersion = error.Error()
 	}
 
 	return c.JSON(map[string]any{
@@ -44,7 +45,7 @@ func config(c *fiber.Ctx) error {
 		"BASE_PATH":                            fmt.Sprintf("%s%s", c.BaseURL(), os.Getenv("BASE_PATH")),
 		"PROJECTS_PATH":                        utils.ProjectsPath(),
 		"PROJECTS_BACKUP_PATH":                 utils.BackupProjectsPath(),
-		"ALLURE_VERSION":                       string(allureVersion),
+		"ALLURE_VERSION":                       allureVersion,
 		"KEEP_RESULTS_HISTORY":                 os.Getenv("KEEP_RESULTS_HISTORY"),
 		"KEEP_HISTORY_LATEST":                  os.Getenv("KEEP_HISTORY_LATEST"),
 		"DOWNLOAD_REPORT_CSV_DESTINATION_PATH": utils.GetBackupReportCSVPath(),

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/go-cmd/cmd"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 )
@@ -136,4 +137,16 @@ func GetEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func GetAllureVersion() (string, error) {
+	allureCmd := GetEnv("LOCAL_ALLURE_EXECUTABLE", "allure")
+
+	getAllureVersion := <-cmd.NewCmd(allureCmd, "--version").Start()
+
+	if getAllureVersion.Error != nil {
+		return "", fmt.Errorf("%v - make sure Allure executable configured properly!", getAllureVersion.Error.Error())
+	}
+
+	return getAllureVersion.Stdout[0], nil
 }
