@@ -50,6 +50,6 @@ Thumbs.db
 
 .*/
 
-*allure
+*allure*
 *AppData
 bitbucket-pipelines.yml
