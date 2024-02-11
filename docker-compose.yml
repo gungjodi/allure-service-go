@@ -1,22 +1,22 @@
 version: '3.8'
 
 services:
-  allure-service-go:
+  allure-service:
     build:
       context: .
     pid: host
-    container_name: allure-service-go
-    image: allure-service-go:latest
+    container_name: allure-service
+    image: allure-service:latest
     pull_policy: always
     restart: always
     ports:
       - "5050:5050"
     volumes:
       - ./.AppData/projects:/app/AppData/projects
-      - ./allure-service-go/reports/csv:/app/AppData/reports/csv
-      - ./allure-service-go/:/app/BackupData
-      # - ./allure/config/allure.yml:/allure/config/allure.yml
-      # - ./allure/plugins/custom-logo-plugin:/allure/plugins/custom-logo-plugin
+      - ./allure-service/reports/csv:/app/AppData/reports/csv
+      - ./allure-service/:/app/BackupData
+      # - ./allure/config/allure.yml:/allure/config/allure.yml # optional custom allure config to activate custom-logo-plugin
+      # - ./allure/plugins/custom-logo-plugin:/allure/plugins/custom-logo-plugin # put your custom-logo-plugin here
     environment:
       APP_MODE: release
       KEEP_RESULTS_HISTORY: true
