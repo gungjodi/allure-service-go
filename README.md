@@ -3,11 +3,16 @@ This project is based on [allure-docker-service](https://github.com/fescobar/all
 
 Ported and rewritten in Go, using [GoFiber](https://gofiber.io/) with some custom modification.
 
-# Main Features
+
+
+## Main Features
 1. Send allure result files then generate the report
 2. Save reports based on project
 3. Serve allure report
+
 > For more information, visit [allure-docker-service](https://github.com/fescobar/allure-docker-service)
+
+> [Live Demo](https://apps.gungj.tech/allure-service/swagger/index.html) (Using my home server, it might be down temporarily)
 
 ## Before Running
 1. Set max multipart to set max files that can be uploaded
@@ -46,4 +51,14 @@ Ported and rewritten in Go, using [GoFiber](https://gofiber.io/) with some custo
 
     `export PATH=$(go env GOPATH)/bin:$PATH`
 
-5. Access swager in browser by opening this URL http://localhost:5050/allure-docker-service/swagger/index.html
+5. Access swager in browser by opening this URL http://localhost:5050/allure-service/swagger/index.html
+
+## Build Docker Image
+
+### Build docker image only
+
+    > ```docker compose build```
+
+### Build and deploy/run container
+
+    > ```docker compose up -d```
