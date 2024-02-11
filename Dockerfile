@@ -30,7 +30,7 @@ ARG PORT=5050
 
 ENV APP_VERSION ${APP_VERSION}
 ENV APP_MODE release
-ENV BASE_PATH /allure-docker-service
+ENV BASE_PATH /allure-service
 ENV ALLURE_HOME=/allure
 ENV APP_DATA_DIR=/app/AppData
 ENV BACKUP_DATA_DIR=/app/BackupData
